@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio,line-clamp"></script>
+    <title>Bioskop IF</title>
+  </head>
+  <body>
+    <!-- Home -->
+    <header class="text-center relative text-white">
+      <img
+        src="./bg.png"
+        alt=""
+        class="w-screen -z-50 object-cover h-screen brightness-50"
+      />
+      <div class="pt-32 absolute top-[10%] left-[37%]">
+        <h1 class="text-6xl font-semibold">Bioskop IF</h1>
+        <p class="text-2xl font-medium">Tempat mencari film kesukaan anda</p>
+        <form class="pt-20 text-black">
+          <input
+            type="text"
+            class="input-keyword"
+            placeholder="Search movies..."
+          />
+          <button
+            type="button"
+            class="search-button py-[9px] px-[6px] text-white bg-blue-600 hover:bg-blue-700 focus:ring-1 focus:ring-blue-300"
+            onclick="searchMovies()"
+          >
+            Search
+          </button>
+        </form>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <section class="divider hidden m-4">
+      <div
+        class="movies-container grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-[10px] justify-items-center"
+      ></div>
+      <div
+        class="modal hidden fixed z-1 pt-[100px] left-0 top-0 w-full h-full overflow-auto bg-black/50"
+      ></div>
+    </section>
+
+    <script>
+      // Must be stored in env (exposed for learning purpose only)
+      const apikey = "http://www.omdbapi.com/?apikey=5afd2403&";
+
+      const searchMovies = async () => {
+        try {
+          const movies = await getData();
+          updateMoviesUI(movies);
+          showDivider();
+        } catch (err) {
+          alert(err);
+        }
+      };
+
+      // Fetch the movies or movie details from the server
+      const getData = (movieId) => {
+        const inputKeywords = document.querySelector(".input-keyword");
+        const detailsData = "i=" + movieId;
+        const moviesData = "s=" + inputKeywords.value;
+        const param = movieId ? detailsData : moviesData;
+        return fetch(apikey + param)
+          .then((res) => {
+            if (!res.ok) throw new Error(res.statusText);
+            return res.json();
+          })
+          .then((res) => {
+            if (res.Response === "False") throw new Error(res.Error);
+            return res;
+          });
+      };
+
+      const updateMoviesUI = (movies) => {
+        const movieContainer = document.querySelector(".movies-container");
+        const listsOfMovies = movies.Search.map((i) => showMovies(i)).join("");
+        movieContainer.innerHTML = listsOfMovies;
+      };
+
+      const showDivider = () => {
+        const divider = document.querySelector(".divider");
+        divider.style.display = "block";
+      };
+
+      // Movie details (modal)
+      const modalElement = document.querySelector(".modal");
+      const openModal = async (movieId) => {
+        const movieDetails = await getData(movieId);
+        updateDetailsUI(movieDetails);
+      };
+
+      const updateDetailsUI = (details) => {
+        modalElement.innerHTML = showModal(details);
+        modalElement.style.display = "block";
+      };
+      
+      window.onclick = (event) => {
+        // Closing the modal element whether the user clicks on the modal element or the close button
+        if (event.target == modalElement || close)
+          modalElement.style.display = "none";
+      };
+
+      // Components
+      function showMovies(m) {
+        return `
+        <!-- Movies content -->
+        <div class="movie-container cursor-pointer text-center flex flex-col items-center"id="${m.imdbID}" 
+            onclick="openModal('${m.imdbID}')">
+            <img src="${m.Poster}" class="h-full justify-self-center mx-auto"/>
+            <h1 class="text-xl font-medium h-[10vh]">${m.Title}</h1>
+            <div id="myModal" class="modal"></div>
+        </div>`;
+      }
+
+      function showModal(m) {
+        console.log(m);
+        return `
+        <!-- Modal content -->
+        <div class="modal-content bg-[#fefefe] m-auto p-[20px] border-2 border-[#888] w-[80%]">
+          <span class="close text-[#aaaaaa] float-right text-[28px] font-bold hover:cursor-pointer hover:text-[#000]" >&times;</span>
+          <div class="flex gap-3 flex-col">
+            <div class="flex justify-between pr-5">
+              <h1 class="text-2xl font-bold">${m.Title} <span class="font-normal text-lg">${m.Year}</span></h1>
+              <p class="text-2xl font-bold">${m.imdbRating}</p>
+            </div>
+            <hr/>
+            <p>${m.Plot}</p>
+            <hr/>
+            <div>
+              <h1 class="font-semibold text-left">Genre : <span class="font-normal">${m.Genre}</span></h1>
+              <h1 class="font-semibold text-left">Writer : <span class="font-normal">${m.Writer}</span></h1>
+              <h1 class="font-semibold text-left">Director : <span class="font-normal">${m.Director}</span></h1>
+              <h1 class="font-semibold text-left">Actors : <span class="font-normal">${m.Actors}</span></h1>
+            </div>
+          </div>
+        </div>
+      `;
+      }
+    </script>
+  </body>
+</html>
